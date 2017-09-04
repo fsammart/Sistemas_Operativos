@@ -25,7 +25,7 @@ void startListening(int fdread, int fdwrite, int son)
 	{	
 		command[7]=0;
 		sprintf(num,"%d",son);	
-		printf("Soy tu hijo %d y recibi el archivo: %s\n", son,buff);
+		printf("I am your son number %d and I received the file: %s\n", son,buff);
 		strcat(command,buff);
 		FILE *file = popen(command,"r");	
 		fgets(aux,1000,file);	
@@ -62,7 +62,11 @@ void initializePipes(int pipearr[][2], int q)
 {
 	for(int i = 0; i < q; i++)
 	{
-		pipe(pipearr[i]);
+		if(pipe(pipearr[i]) < 0)
+		{
+			perror("pipe");
+			exit(1);
+		}
 	}
 
 }
@@ -111,6 +115,12 @@ int main(int argc, char* argv[])
 		}
 		else
 		{
+			if (pid < 0)
+			{
+				perror("fork");
+				exit (1);
+			}
+
 			closeUnnecesaryEndsFather(pipearr[SONS], pipearr[k]);
 			pids[k] = pid;
 		
