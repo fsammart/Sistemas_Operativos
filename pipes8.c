@@ -16,22 +16,20 @@ void startListening(int fdread, int fdwrite, int son)
 	int readbytes;
 	char aux[1000];
 
-	strcpy(command,"md5sum");
+	strcpy(command, "md5sum");
 	command[6] = ' ';
 	command[7] = 0;
 
-
-	while((readbytes = read(fdread,buff,152))>0)
+	while((readbytes = read(fdread,buff,152)) > 0)
 	{	
-		command[7]=0;
-		sprintf(num,"%d",son);	
-		printf("I am your son number %d and I received the file: %s\n", son,buff);
-		strcat(command,buff);
-		FILE *file = popen(command,"r");	
-		fgets(aux,1000,file);	
-		strcat(num,aux);
-		write(fdwrite,num,strlen(num)+1);		
-				
+		command[7] = 0;
+		sprintf(num, "%d", son);	
+		printf("I am your son number %d and I received the file: %s\n", son, buff);
+		strcat(command, buff);
+		FILE * file = popen(command, "r");	
+		fgets(aux, 1000, file);	
+		strcat(num, aux);
+		write(fdwrite, num, strlen(num) + 1);					
 	}
 
 }
@@ -43,17 +41,20 @@ char * createSharedMemory(key_t key)
     int shmid;
     char * shm;
 
-    printf("%d\n",key );
+    printf("%d\n", key);
 
-    if ((shmid = shmget(key, 4000, IPC_CREAT | 0666)) < 0) {
+    if ((shmid = shmget(key, 4000, IPC_CREAT | 0666)) < 0)
+    {
         perror("shmget");
         exit(1);
     }
 
-    if ((shm = shmat(shmid, NULL, 0)) == (char *) -1) {
+    if ((shm = shmat(shmid, NULL, 0)) == (char *) - 1)
+    {
         perror("shmat");
         exit(1);
     }
+
     return shm;
 
 }
@@ -73,8 +74,8 @@ void initializePipes(int pipearr[][2], int q)
 
 void closeUnnecessaryEndsChild(int pipearr[2], int tofather[2])
 {
-		close(pipearr[1]);
-		close(tofather[0]);
+	close(pipearr[1]);
+	close(tofather[0]);
 }
 
 void closeUnnecesaryEndsFather(int tofather[2], int son[2])
@@ -83,13 +84,13 @@ void closeUnnecesaryEndsFather(int tofather[2], int son[2])
 	close(son[0]);
 }
 
-void allocatingNewFile(int pipearr[2], char* file, int length, int son)
+void allocatingNewFile(int pipearr[2], char * file, int length, int son)
 {
 	printf("Allocating new file %s to son number %d \n", file, son);
 	write(pipearr[1], file, length);
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char * argv[])
 {
 	pid_t pids[SONS];
 	int pid;
@@ -98,7 +99,7 @@ int main(int argc, char* argv[])
 	int workDoneByEach[SONS] = {1, 1, 1};
 	double minForEach = (double)(argc - 1) / SONS;
 	int overload = argc - 1 - (int)minForEach * SONS;
-	char *shm, *s;
+	char * shm, * s;
 
 
 	initializePipes(pipearr, SONS + 1);
@@ -129,26 +130,24 @@ int main(int argc, char* argv[])
 	}
 
 
-	shm=createSharedMemory(getpid());
-	shm[0]=1;
-	s=shm +1;
+	shm = createSharedMemory(getpid());
+	shm[0] = 1;
+	s = shm + 1;
 
-	int m=1;
-
-	for(; m < 4 && m < argc; m++)
+	for(int m = 1; m < 4 && m < argc; m++)
 	{	
-		write(pipearr[m-1][1], argv[m], strlen(argv[m])+1);
+		write(pipearr[m - 1][1], argv[m], strlen(argv[m]) + 1);
 		
 	}
 
-	for(;m<argc; m++)
+	for(;m < argc; m++)
 	{
-		read(pipearr[SONS][0],buff,100);
+		read(pipearr[SONS][0], buff, 100);
 		strcat(s, buff);
 
 		if(workDoneByEach[buff[0] - '0'] < (int)minForEach)
 		{
-			allocatingNewFile(pipearr[buff[0] - '0'], argv[m], strlen(argv[m]) +1, buff[0] - '0');
+			allocatingNewFile(pipearr[buff[0] - '0'], argv[m], strlen(argv[m]) + 1, buff[0] - '0');
 			workDoneByEach[buff[0] - '0']++;
 
 		}
@@ -156,21 +155,21 @@ int main(int argc, char* argv[])
 		{
 			if((overload > 0 )&& (workDoneByEach[buff[0] - '0'] == (int)minForEach))
 			{
-				allocatingNewFile(pipearr[buff[0] - '0'], argv[m], strlen(argv[m]) +1, buff[0] - '0');
+				allocatingNewFile(pipearr[buff[0] - '0'], argv[m], strlen(argv[m]) + 1, buff[0] - '0');
 				workDoneByEach[buff[0] - '0']++;
 				overload--;
 			}
 		}
 	}
 
-	for(int h = 1; h<argc && h<SONS +1; h++)
+	for(int h = 1; h < argc && h < SONS + 1; h++)
 	{	
-		read(pipearr[SONS][0],buff,100);
+		read(pipearr[SONS][0], buff, 100);
 		strcat(s, buff);
 		//printf("Hash: %s\n", buff+1);
 		
 	}
-	shm[0]=0;
+	shm[0] = 0;
     
 }
 	
