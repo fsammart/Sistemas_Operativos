@@ -34,7 +34,6 @@ void startListening(int fdread, int fdwrite, int son)
 				
 	}
 
-
 }
 
 
@@ -69,12 +68,21 @@ void initializePipes(int pipearr[][2], int q)
 
 }
 
+void closeUnnecessaryEndsChild(int pipearr[2], int tofather[2])
+{
+		close(pipearr[1]);
+		close(tofather[0]);
+}
 
+void closeUnnecesaryEndsFather(int tofather[2], int son[2])
+{
+	close(tofather[1]);
+	close(son[0]);
+}
 
 int main(int argc, char* argv[])
 {
 	pid_t pids[SONS];
-	int stf[2];
 	int pid;
 	int pipearr[SONS + 1][2];
 	char buff[152];
@@ -89,11 +97,13 @@ int main(int argc, char* argv[])
 		pid = fork();
 		if(pid == 0)
 		{
+			closeUnnecessaryEndsChild(pipearr[k], pipearr[SONS]);
 			startListening(pipearr[k][0], pipearr[SONS][1], k);
 			
 		}
 		else
 		{
+			closeUnnecesaryEndsFather(pipearr[SONS], pipearr[k]);
 			pids[k] = pid;
 		
 		}
