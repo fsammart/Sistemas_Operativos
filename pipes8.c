@@ -40,7 +40,6 @@ void startListening(int fdread, int fdwrite, int son)
 char * createSharedMemory(key_t key)
 {
 
-	char c;
     int shmid;
     char * shm;
 
@@ -86,6 +85,9 @@ int main(int argc, char* argv[])
 	int pid;
 	int pipearr[SONS + 1][2];
 	char buff[152];
+	int workDoneByEach[SONS] = {1, 1, 1};
+	double minForEach = (double)(argc - 1) / SONS;
+	int overload = argc - 1 - (int)minForEach * SONS;
 	char *shm, *s;
 
 
@@ -122,13 +124,29 @@ int main(int argc, char* argv[])
 		write(pipearr[m-1][1], argv[m], strlen(argv[m])+1);
 		
 	}
-	while(m<argc){
+
+	for(;m<argc; m++)
+	{
 		read(pipearr[SONS][0],buff,100);
 		strcat(s, buff);
-		printf("Asignando nueva tarea a hijo %d de archivo %s \n", buff[0] - '0', argv[m]);
-		write(pipearr[buff[0] - '0'][1], argv[m], strlen(argv[m]) +1);
-		m++;
 
+		if(workDoneByEach[buff[0] - '0'] < (int)minForEach)
+		{
+			printf("Asignando nueva tarea a hijo %d de archivo %s \n", buff[0] - '0', argv[m]);
+			write(pipearr[buff[0] - '0'][1], argv[m], strlen(argv[m]) +1);
+			workDoneByEach[buff[0] - '0']++;
+
+		}
+		else
+		{
+			if((overload > 0 )&& (workDoneByEach[buff[0] - '0'] == (int)minForEach))
+			{
+				printf("Asignando nueva tarea a hijo %d de archivo %s \n", buff[0] - '0', argv[m]);
+				write(pipearr[buff[0] - '0'][1], argv[m], strlen(argv[m]) +1);
+				workDoneByEach[buff[0] - '0']++;
+				overload--;
+			}
+		}
 	}
 
 	for(int h = 1; h<argc && h<SONS +1; h++)
