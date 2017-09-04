@@ -79,6 +79,12 @@ void closeUnnecesaryEndsFather(int tofather[2], int son[2])
 	close(son[0]);
 }
 
+void allocatingNewFile(int pipearr[2], char* file, int length, int son)
+{
+	printf("Allocating new file %s to son number %d \n", file, son);
+	write(pipearr[1], file, length);
+}
+
 int main(int argc, char* argv[])
 {
 	pid_t pids[SONS];
@@ -132,8 +138,7 @@ int main(int argc, char* argv[])
 
 		if(workDoneByEach[buff[0] - '0'] < (int)minForEach)
 		{
-			printf("Asignando nueva tarea a hijo %d de archivo %s \n", buff[0] - '0', argv[m]);
-			write(pipearr[buff[0] - '0'][1], argv[m], strlen(argv[m]) +1);
+			allocatingNewFile(pipearr[buff[0] - '0'], argv[m], strlen(argv[m]) +1, buff[0] - '0');
 			workDoneByEach[buff[0] - '0']++;
 
 		}
@@ -141,8 +146,7 @@ int main(int argc, char* argv[])
 		{
 			if((overload > 0 )&& (workDoneByEach[buff[0] - '0'] == (int)minForEach))
 			{
-				printf("Asignando nueva tarea a hijo %d de archivo %s \n", buff[0] - '0', argv[m]);
-				write(pipearr[buff[0] - '0'][1], argv[m], strlen(argv[m]) +1);
+				allocatingNewFile(pipearr[buff[0] - '0'], argv[m], strlen(argv[m]) +1, buff[0] - '0');
 				workDoneByEach[buff[0] - '0']++;
 				overload--;
 			}
