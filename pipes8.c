@@ -71,7 +71,7 @@ void initializePipes(int pipearr[][2], int q)
 	{
 		if(pipe(pipearr[i]) < 0)
 		{
-			perror("pipe");
+			fprintf(stderr, "Could not create pipe.\n");
 			exit(1);
 		}
 	}
@@ -84,6 +84,18 @@ void allocatingNewFile(int pipearr[2], char * file, int length, int son)
 	printf("Allocating new file %s to son number %d \n", file, son);
 	write(pipearr[WRITE_END], file, length);
 }
+
+
+void send(int fd, char * file, int length) {
+
+	int written = 0;
+
+	while(written < length)
+		written += write(
+			fd, file + written, length - written
+		);
+}
+
 
 int main(int argc, char * argv[])
 {
@@ -115,8 +127,8 @@ int main(int argc, char * argv[])
 		{
 			if (pid < 0)
 			{
-				perror("fork");
-				exit (1);
+				fprintf(stderr, "Could not fork.\n");
+				exit(1);
 			}
 			
 			close(pipearr[k][READ_END]);
@@ -133,7 +145,7 @@ int main(int argc, char * argv[])
 	int jobNumber;
 	for(jobNumber = 1; jobNumber < SONS + 1 && jobNumber < argc; jobNumber++)
 	{	
-		write(pipearr[jobNumber - 1][WRITE_END], argv[jobNumber], strlen(argv[jobNumber]) + 1);
+		send(pipearr[jobNumber - 1][WRITE_END], argv[jobNumber], strlen(argv[jobNumber]) + 1);
 		
 	}
 
