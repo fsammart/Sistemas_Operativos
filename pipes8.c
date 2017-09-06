@@ -107,6 +107,7 @@ int main(int argc, char * argv[])
 	int minForEach = (argc - 1) / SONS;
 	int overload = argc - 1 - minForEach * SONS;
 	char * shm, * s;
+	int jobNumber;
 
 
 	initializePipes(pipearr, SONS + 1);
@@ -142,7 +143,6 @@ int main(int argc, char * argv[])
 	shm = createSharedMemory(getpid());
 	shm[0] = 1;
 	s = shm + 1;
-	int jobNumber;
 	for(jobNumber = 1; jobNumber < SONS + 1 && jobNumber < argc; jobNumber++)
 	{	
 		send(pipearr[jobNumber - 1][WRITE_END], argv[jobNumber], strlen(argv[jobNumber]) + 1);
