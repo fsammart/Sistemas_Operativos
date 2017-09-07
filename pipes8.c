@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <sys/wait.h>
 #define SONS 3
 #define READ_END 0
 #define WRITE_END 1
@@ -13,6 +14,9 @@
 #define AUX_MAX 1000
 #define COMMAND_MAX 100
 #define CHILD_NUMBER buff[0]-'0'
+
+
+
 
 void startListening(int fdread, int fdwrite, int son)
 {
@@ -96,7 +100,27 @@ void send(int fd, char * file, int length) {
 		);
 }
 
+void terminateSons(int pipearr[][2]){
+	int status;
+	int i;
+	char  end[1];
+	end[0] = 0;
 
+	for(i = 0 ; i < SONS; i++){
+
+		send(pipearr[i][WRITE_END], end, 1);
+
+		if (wait(&status) >= 0)
+		{
+			if (WIFEXITED(status))
+			{
+				/* Child process exited normally, through `return` or `exit` */
+				printf("Child process exited with %d status\n", WEXITSTATUS(status));
+
+			}
+		}
+	}
+}
 int main(int argc, char * argv[])
 {
 	pid_t pids[SONS];
@@ -149,10 +173,10 @@ int main(int argc, char * argv[])
 		
 	}
 
-	for(;jobNumber < argc; jobNumber++)
+	while(jobNumber < argc)
 	{
 		read(pipearr[SONS][READ_END], buff, BUFF_MAX);
-		strcat(s, buff);
+		strcat(s, buff+1);
 
 		if(workDoneByEach[CHILD_NUMBER] < minForEach)
 		{
@@ -169,17 +193,19 @@ int main(int argc, char * argv[])
 				overload--;
 			}
 		}
+		jobNumber++;
 	}
 
 	for(int h = 1; h < argc && h < SONS + 1; h++)
 	{	
 		read(pipearr[SONS][READ_END], buff, BUFF_MAX);
-		strcat(s, buff);
+		strcat(s, buff+1);
 		//printf("Hash: %s\n", buff+1);
 		
 	}
 	shm[0] = 0;
-    
+	printf("paso\n");
+    //terminateSons(pipearr);
 }
 	
 

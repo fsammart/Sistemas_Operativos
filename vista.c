@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
     current=shm + 1;
     while(shm[0]!=0 || *current!=0){
         if(*current!= 0 )
-        {
+        {   
             putchar(*current);
             current++;
         }
