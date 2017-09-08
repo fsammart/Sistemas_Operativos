@@ -1,3 +1,4 @@
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -213,7 +214,12 @@ void ditributeJobs(int sons, int  pipearr[][2], char * s, int argc, char * argv[
 	while(jobNumber < argc)
 	{
 		int size=read(pipearr[SONS][READ_END], buff, 41);
+
+		//lock mutex
+
 		strcat(s, buff+1);
+
+		//unlock mutex
 
 		child_number=buff[0]-'0';
 
@@ -243,11 +249,15 @@ void ditributeJobs(int sons, int  pipearr[][2], char * s, int argc, char * argv[
 	for(int h = 1; h < argc && h < SONS + 1; h++)
 	{	
 		read(pipearr[SONS][READ_END], buff, BUFF_MAX);
+
+		//lock mutex
+
 		strcat(s, buff+1);
+
+		//unlock mutex
 	}
 
 }
-
 
 int main(int argc, char * argv[])
 {
@@ -265,6 +275,8 @@ int main(int argc, char * argv[])
 	/*create shared memory using pid as key*/
 	shm = createSharedMemory(getpid());
 
+	//init mutex
+
 	printf("%d\n", getpid());
 
 	shm[0] = 1;
@@ -274,8 +286,6 @@ int main(int argc, char * argv[])
 	ditributeJobs(SONS, pipearr, s, argc, argv);
 
 	shm[0] = 0;
-
-	printf("paso\n");
 
     terminateSons(pipearr);
 }

@@ -36,11 +36,19 @@ int main(int argc, char* argv[])
 
     current=shm + 1;
     while(shm[0]!=0 || *current!=0){
+
+        //if mutex unlocked and *current != 0 then lock mutex and finish printing then unlock mutex
+        
         if(*current!= 0 )
         {   
             putchar(*current);
             current++;
         }
+    }
+
+    if (shmctl(shmid, IPC_RMID, NULL) < 0){
+        perror("shmctl");
+        exit(1);
     }
 
     exit(0);
