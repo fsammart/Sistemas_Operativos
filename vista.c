@@ -13,9 +13,17 @@ int main(int argc, char* argv[])
     key_t key;
     char *shm, *s;
     char * current;
-
-    key = atoi(argv[1]);
-
+    int pid;
+    if(argc<=1)
+    {
+        printf("Por favor ingrese PID del proceso\n");
+        scanf("%d", &pid);
+        printf("Su pid es %d\n", pid);
+        key=pid;
+    }else{
+        key=atoi(argv[1]);
+    }
+ 
     if ((shmid = shmget(key, 4000, 0666)) < 0) {
         perror("shmget");
         exit(1);
