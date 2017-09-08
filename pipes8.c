@@ -43,6 +43,7 @@ void startListening(int fdread, int fdwrite, int son)
 	{	
 		if(buff[0]!=0)
 		{
+			printf("he leido %d\n", readbytes);
 			command[7] = 0;
 			sprintf(num, "%d", son);	
 			printf("I am your son number %d and I received the file: %s\n", son, buff);
@@ -51,6 +52,7 @@ void startListening(int fdread, int fdwrite, int son)
 			fgets(aux, AUX_MAX, file);	
 			strcat(num, aux);
 			write(fdwrite, num, strlen(num) + 1);
+			printf("mande %d digitos \n", strlen(num));
 		}else{
 			flag=FALSE;
 		}					
@@ -210,10 +212,12 @@ void ditributeJobs(int sons, int  pipearr[][2], char * s, int argc, char * argv[
 
 	while(jobNumber < argc)
 	{
-		read(pipearr[SONS][READ_END], buff, BUFF_MAX);
+		int size=read(pipearr[SONS][READ_END], buff, 41);
 		strcat(s, buff+1);
 
 		child_number=buff[0]-'0';
+
+		printf("lei de hijo %d , %d digitos\n", child_number, size);
 
 		if(workDoneByEach[child_number] < minForEach)
 		{
@@ -228,6 +232,9 @@ void ditributeJobs(int sons, int  pipearr[][2], char * s, int argc, char * argv[
 				allocatingNewFile(pipearr[child_number], argv[jobNumber], strlen(argv[jobNumber]) + 1, child_number);
 				workDoneByEach[child_number]++;
 				overload--;
+			}else
+			{
+				jobNumber--;
 			}
 		}
 		jobNumber++;
@@ -267,6 +274,8 @@ int main(int argc, char * argv[])
 	ditributeJobs(SONS, pipearr, s, argc, argv);
 
 	shm[0] = 0;
+
+	printf("paso\n");
 
     terminateSons(pipearr);
 }
