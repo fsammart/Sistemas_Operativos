@@ -333,6 +333,7 @@ sem_t * createSemaphore(int key)
 	}
 
 	return sem;
+}
 
 
 void saveResultsToFile(char * results)
