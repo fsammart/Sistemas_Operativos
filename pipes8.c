@@ -8,6 +8,8 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/wait.h>
+#include <semaphore.h>
+
 #define SONS 3
 #define READ_END 0
 #define WRITE_END 1
@@ -16,6 +18,7 @@
 #define COMMAND_MAX 100
 #define TRUE 1
 #define FALSE 0
+#define MAXPIDDIGITS 11
 
 void startListening(int fdread, int fdwrite, int son);
 char * createSharedMemory(key_t key);
@@ -23,8 +26,10 @@ void initializePipes(int pipearr[][2], int q);
 void allocatingNewFile(int pipearr[2], char * file, int length, int son);
 void send(int fd, char * file, int length);
 void terminateSons(int pipearr[][2]);
-void ditributeJobs(int sons, int  pipearr[][2], char * s, int argc, char * argv[]);
+void ditributeJobs(sem_t * sem, int sons, int  pipearr[][2], char * s, int argc, char * argv[]);
 void detachSharedMemory(char * shm);
+void intToChar(int num, char result[]);
+sem_t * createSemaphore(int key);
 
 
 
@@ -45,7 +50,6 @@ void startListening(int fdread, int fdwrite, int son)
 	{	
 		if(buff[0]!=0)
 		{
-			printf("he leido %d\n", readbytes);
 			command[7] = 0;
 			sprintf(num, "%d", son);	
 			printf("I am your son number %d and I received the file: %s\n", son, buff);
@@ -54,7 +58,6 @@ void startListening(int fdread, int fdwrite, int son)
 			fgets(aux, AUX_MAX, file);	
 			strcat(num, aux);
 			write(fdwrite, num, strlen(num) + 1);
-			printf("mande %d digitos \n", strlen(num));
 		}else{
 			flag=FALSE;
 		}					
@@ -120,7 +123,7 @@ void terminateSons(int pipearr[][2])
 {
 	int status;
 	int i;
-	char  end[1];
+	char end[1];
 	
 	end[0] = 0;
 
@@ -134,7 +137,7 @@ void terminateSons(int pipearr[][2])
 			if (WIFEXITED(status))
 			{
 				/* Child process exited normally, through `return` or `exit` */
-				printf("Child process exited with %d status\n", WEXITSTATUS(status));
+				//printf("Child process exited with %d status\n", WEXITSTATUS(status));
 
 			}
 		}
@@ -190,7 +193,7 @@ void createSonProcesses(int sons, int  pipearr[][2], pid_t pids[])
 	}
 }
 
-char * receive(int pipearr[][2], int * size, char  buff[])
+void receive(int pipearr[][2], int * size, char  buff[])
 {
 		int k=0;
 		char c;
@@ -209,18 +212,18 @@ char * receive(int pipearr[][2], int * size, char  buff[])
 				k++;
 			}	
 		}
+
 		buff[k]=0;
 
 		/* read last 0*/
 		read(pipearr[SONS][READ_END], &c, 1);
 
 		*size=k	;
-		return buff;
 
 }
 
 
-void ditributeJobs(int sons, int  pipearr[][2], char * s, int argc, char * argv[])
+void ditributeJobs(sem_t * sem, int sons, int  pipearr[][2], char * s, int argc, char * argv[])
 {
 	int jobNumber;
 	char buff[BUFF_MAX];
@@ -229,6 +232,7 @@ void ditributeJobs(int sons, int  pipearr[][2], char * s, int argc, char * argv[
 	int overload ;
 	int child_number;
 	int size;
+	int extra=0;
 
 
 	minForEach = (argc - 1) / SONS;
@@ -238,6 +242,7 @@ void ditributeJobs(int sons, int  pipearr[][2], char * s, int argc, char * argv[
 	for(jobNumber = 1; jobNumber < SONS + 1 && jobNumber < argc; jobNumber++)
 	{	
 		send(pipearr[jobNumber - 1][WRITE_END], argv[jobNumber], strlen(argv[jobNumber]) + 1);
+		extra++;
 		
 	}
 
@@ -245,11 +250,12 @@ void ditributeJobs(int sons, int  pipearr[][2], char * s, int argc, char * argv[
 	{
 
 		receive(pipearr, &size, buff);
-		//lock mutex
+		
+		sem_wait(sem);
 
 		strcat(s, buff+1);
 
-		//unlock mutex
+		sem_post(sem);
 
 		child_number=buff[0]-'0';
 
@@ -271,21 +277,23 @@ void ditributeJobs(int sons, int  pipearr[][2], char * s, int argc, char * argv[
 			}else
 			{
 				jobNumber--;
+				extra--;
 			}
 		}
 		jobNumber++;
 	}
 
-	for(int h = 1; h < argc && h < SONS + 1; h++)
+	while(extra>=1)
 	{	
 		receive(pipearr, &size, buff);
 		printf("Lei %d datos\n",size );
 
-		//lock mutex
+		sem_wait(sem);
 
 		strcat(s, buff+1);
 
-		//unlock mutex
+		sem_post(sem);
+		extra--;
 	}
 
 }
@@ -299,6 +307,34 @@ void detachSharedMemory(char * shm){
     }
 }
 
+<<<<<<< HEAD
+void intToChar(int num, char result[]){
+  	sprintf(result, "%d", num);
+  	
+}
+
+/* key must have no more than 10 digits*/
+sem_t * createSemaphore(int key)
+{
+	sem_t * sem;
+
+	char pidChar[MAXPIDDIGITS];
+	intToChar(key, pidChar + 1);
+
+	pidChar[0]='/';
+
+	printf("la clave del semaforo padre es %s\n", pidChar);
+
+	 sem = sem_open (pidChar, O_CREAT | O_EXCL, 0644, 1); 
+ 
+	if(sem==SEM_FAILED){
+		printf("error creating semaphore\n");
+		exit(1);
+	}
+
+	return sem;
+
+=======
 void saveResultsToFile(char * results)
 {
 	FILE* file = fopen("results.txt","wb");
@@ -316,14 +352,19 @@ void saveResultsToFile(char * results)
 	}
 	
 	fclose(file);
+>>>>>>> 528a3abe80fec2ec2c2d124074befd3c37a5f7a0
 }
 
 
 int main(int argc, char * argv[])
 {
 	pid_t pids[SONS];
+	pid_t pid;
 	int pipearr[SONS + 1][2];
 	char * shm, * s;
+	sem_t * sem;
+
+	printf("%d\n", argc);
 	
 
 	initializePipes(pipearr, SONS + 1);
@@ -332,11 +373,13 @@ int main(int argc, char * argv[])
 	
 	/*close end from parent's pipe*/
 	close(pipearr[SONS][WRITE_END]); 
+
+	pid=getpid();
 	
 	/*create shared memory using pid as key*/
-	shm = createSharedMemory(getpid());
+	shm = createSharedMemory(pid);
 
-	//init mutex
+	sem = createSemaphore(pid);
 
 	printf("%d\n", getpid());
 
@@ -344,7 +387,7 @@ int main(int argc, char * argv[])
 
 	s = shm + 1;
 
-	ditributeJobs(SONS, pipearr, s, argc, argv);
+	ditributeJobs(sem,SONS, pipearr, s, argc, argv);
 
 	shm[0] = 0;
 
