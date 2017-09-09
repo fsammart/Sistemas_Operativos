@@ -18,12 +18,13 @@
 #define FALSE 0
 
 void startListening(int fdread, int fdwrite, int son);
-char * createSharedMemory(key_t key, int * shmid);
+char * createSharedMemory(key_t key);
 void initializePipes(int pipearr[][2], int q);
 void allocatingNewFile(int pipearr[2], char * file, int length, int son);
 void send(int fd, char * file, int length);
 void terminateSons(int pipearr[][2]);
 void ditributeJobs(int sons, int  pipearr[][2], char * s, int argc, char * argv[]);
+void detachSharedMemory(char * shm);
 
 
 
@@ -62,18 +63,18 @@ void startListening(int fdread, int fdwrite, int son)
 }
 
 
-char * createSharedMemory(key_t key, int * shmid)
+char * createSharedMemory(key_t key)
 {
-
+	int shmid;
     char * shm;
 
-    if (((*shmid) = shmget(key, 4000, IPC_CREAT | 0666)) < 0)
+    if ((shmid = shmget(key, 4000, IPC_CREAT | 0666)) < 0)
     {
         perror("shmget");
         exit(1);
     }
 
-    if ((shm = shmat( *shmid, NULL, 0)) == (char *) - 1)
+    if ((shm = shmat( shmid, NULL, 0)) == (char *) - 1)
     {
         perror("shmat");
         exit(1);
@@ -259,10 +260,10 @@ void ditributeJobs(int sons, int  pipearr[][2], char * s, int argc, char * argv[
 }
 
 
-void closeSharedMemory(int shmid){
+void detachSharedMemory(char * shm){
 
-	if (shmctl(shmid, IPC_RMID, NULL) < 0){
-        perror("shmctl");
+	if (shmdt(shm) != 0){
+        perror("shmdt");
         exit(1);
     }
 }
@@ -273,7 +274,7 @@ int main(int argc, char * argv[])
 	pid_t pids[SONS];
 	int pipearr[SONS + 1][2];
 	char * shm, * s;
-	int shmid;
+	
 
 	initializePipes(pipearr, SONS + 1);
 
@@ -283,7 +284,7 @@ int main(int argc, char * argv[])
 	close(pipearr[SONS][WRITE_END]); 
 	
 	/*create shared memory using pid as key*/
-	shm = createSharedMemory(getpid(), &shmid);
+	shm = createSharedMemory(getpid());
 
 	//init mutex
 
@@ -299,7 +300,7 @@ int main(int argc, char * argv[])
 
     terminateSons(pipearr);
 
-    closeSharedMemory(shmid);
+    detachSharedMemory(shm);
 }
 	
 
