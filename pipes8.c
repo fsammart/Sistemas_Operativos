@@ -190,6 +190,36 @@ void createSonProcesses(int sons, int  pipearr[][2], pid_t pids[])
 	}
 }
 
+char * receive(int pipearr[][2], int * size, char  buff[])
+{
+		int k=0;
+		char c;
+		int reachedEnter=FALSE;
+		int r;
+
+		while(!reachedEnter && ((r=read(pipearr[SONS][READ_END], &c, 1))>0))
+		{
+			if(r==1)
+			{
+				if(c== '\n')
+				{
+					reachedEnter=TRUE;
+				}
+				buff[k]=c;
+				k++;
+			}	
+		}
+		buff[k]=0;
+
+		/* read last 0*/
+		read(pipearr[SONS][READ_END], &c, 1);
+
+		*size=k	;
+		return buff;
+
+}
+
+
 void ditributeJobs(int sons, int  pipearr[][2], char * s, int argc, char * argv[])
 {
 	int jobNumber;
@@ -198,11 +228,11 @@ void ditributeJobs(int sons, int  pipearr[][2], char * s, int argc, char * argv[
 	int minForEach;
 	int overload ;
 	int child_number;
+	int size;
 
 
 	minForEach = (argc - 1) / SONS;
 	overload = argc - 1 - minForEach * SONS;
-
 	workDoneByEach = initializeArray(SONS);
 
 	for(jobNumber = 1; jobNumber < SONS + 1 && jobNumber < argc; jobNumber++)
@@ -213,8 +243,8 @@ void ditributeJobs(int sons, int  pipearr[][2], char * s, int argc, char * argv[
 
 	while(jobNumber < argc)
 	{
-		int size=read(pipearr[SONS][READ_END], buff, 41);
 
+		receive(pipearr, &size, buff);
 		//lock mutex
 
 		strcat(s, buff+1);
@@ -248,7 +278,8 @@ void ditributeJobs(int sons, int  pipearr[][2], char * s, int argc, char * argv[
 
 	for(int h = 1; h < argc && h < SONS + 1; h++)
 	{	
-		read(pipearr[SONS][READ_END], buff, BUFF_MAX);
+		receive(pipearr, &size, buff);
+		printf("Lei %d datos\n",size );
 
 		//lock mutex
 
