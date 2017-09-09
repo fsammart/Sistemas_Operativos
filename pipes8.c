@@ -299,6 +299,25 @@ void detachSharedMemory(char * shm){
     }
 }
 
+void saveResultsToFile(char * results)
+{
+	FILE* file = fopen("results.txt","wb");
+	int size = strlen(results);
+
+	if(file == NULL)
+	{
+		fprintf(stderr, "%s\n", "Failed to create file");
+		return;
+	}
+	
+	if(fwrite(results, sizeof(char), size, file) != size)
+	{
+		fprintf(stderr, "%s\n", "Error while writing bytes to file");
+	}
+	
+	fclose(file);
+}
+
 
 int main(int argc, char * argv[])
 {
@@ -330,6 +349,8 @@ int main(int argc, char * argv[])
 	shm[0] = 0;
 
     terminateSons(pipearr);
+
+    saveResultsToFile(s);
 
     detachSharedMemory(shm);
 }
