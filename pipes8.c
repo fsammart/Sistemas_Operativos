@@ -307,7 +307,7 @@ void detachSharedMemory(char * shm){
     }
 }
 
-<<<<<<< HEAD
+
 void intToChar(int num, char result[]){
   	sprintf(result, "%d", num);
   	
@@ -334,7 +334,7 @@ sem_t * createSemaphore(int key)
 
 	return sem;
 
-=======
+
 void saveResultsToFile(char * results)
 {
 	FILE* file = fopen("results.txt","wb");
@@ -352,7 +352,7 @@ void saveResultsToFile(char * results)
 	}
 	
 	fclose(file);
->>>>>>> 528a3abe80fec2ec2c2d124074befd3c37a5f7a0
+
 }
 
 
