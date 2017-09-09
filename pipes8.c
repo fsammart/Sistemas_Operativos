@@ -259,6 +259,16 @@ void ditributeJobs(int sons, int  pipearr[][2], char * s, int argc, char * argv[
 
 }
 
+
+void closeSharedMemory(int shmid){
+
+	if (shmctl(shmid, IPC_RMID, NULL) < 0){
+        perror("shmctl");
+        exit(1);
+    }
+}
+
+
 int main(int argc, char * argv[])
 {
 	pid_t pids[SONS];
@@ -288,6 +298,8 @@ int main(int argc, char * argv[])
 	shm[0] = 0;
 
     terminateSons(pipearr);
+
+    closeSharedMemory(getpid());
 }
 	
 
