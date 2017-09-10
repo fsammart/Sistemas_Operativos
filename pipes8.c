@@ -27,7 +27,7 @@ void initializePipes(int pipearr[][2], int q);
 void allocatingNewFile(int pipearr[2], char * file, int length, int son);
 void send(int fd, char * file, int length);
 void terminateSons(int pipearr[][2]);
-void ditributeJobs(sem_t * sem, int sons, int  pipearr[][2], char * s, int argc, char * argv[]);
+void distributeJobs(sem_t * sem, int sons, int  pipearr[][2], char * s, int argc, char * argv[]);
 void detachSharedMemory(char * shm);
 void intToChar(int num, char result[]);
 sem_t * createSemaphore(int key);
@@ -237,7 +237,7 @@ void receive(int pipearr[][2], int * size, char  buff[])
 }
 
 
-void ditributeJobs(sem_t * sem, int sons, int  pipearr[][2], char * s, int argc, char * argv[])
+void distributeJobs(sem_t * sem, int sons, int  pipearr[][2], char * s, int argc, char * argv[])
 {
 	int jobNumber;
 	char buff[BUFF_MAX];
@@ -402,7 +402,7 @@ int main(int argc, char * argv[])
 
 	s = shm + 1;
 
-	ditributeJobs(sem,SONS, pipearr, s, argc, argv);
+	distributeJobs(sem,SONS, pipearr, s, argc, argv);
 
 	shm[0] = 0;
 
