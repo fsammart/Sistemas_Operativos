@@ -37,10 +37,9 @@ void saveResultsToFile(char * results);
 
 void errorFile(char aux[], char buff[])
 {
-
 	sprintf(aux, "archivo inválido : %s \n" , buff);
-
 }
+
 void startListening(int fdread, int fdwrite, int son)
 {
 	char buff[BUFF_MAX];
@@ -72,7 +71,9 @@ void startListening(int fdread, int fdwrite, int son)
 			}
 			strcat(num, aux);
 			write(fdwrite, num, strlen(num) + 1);
-		}else{
+		}
+		else
+		{
 			flag=FALSE;
 		}					
 	}
@@ -85,13 +86,13 @@ char * createSharedMemory(key_t key)
 	int shmid;
     char * shm;
 
-    if ((shmid = shmget(key, 4000, IPC_CREAT | 0666)) < 0)
+    if((shmid = shmget(key, 4000, IPC_CREAT | 0666)) < 0)
     {
         perror("shmget");
         exit(1);
     }
 
-    if ((shm = shmat( shmid, NULL, 0)) == (char *) - 1)
+    if ((shm = shmat(shmid, NULL, 0)) == (char *) - 1)
     {
         perror("shmat");
         exit(1);
@@ -141,7 +142,8 @@ void terminateSons(int pipearr[][2])
 	
 	end[0] = 0;
 
-	for(i = 0 ; i < SONS; i++){
+	for(i = 0 ; i < SONS; i++)
+	{
 
 		send(pipearr[i][WRITE_END], end, 1);
 		printf("hijo %d\n", i);
@@ -165,7 +167,7 @@ int * initializeArray(int sons)
 
 	array= malloc(sons*sizeof(int));
 
-	for (i = 1; i <= sons; ++i)
+	for (i = 0; i < sons; i++)
 	{
 		array[i]=1;
 	}
@@ -222,6 +224,7 @@ void receive(int pipearr[][2], int * size, char  buff[])
 				{
 					reachedEnter=TRUE;
 				}
+				
 				buff[k]=c;
 				k++;
 			}	
@@ -288,12 +291,14 @@ void distributeJobs(sem_t * sem, int sons, int  pipearr[][2], char * s, int argc
 				allocatingNewFile(pipearr[child_number], argv[jobNumber], strlen(argv[jobNumber]) + 1, child_number);
 				workDoneByEach[child_number]++;
 				overload--;
-			}else
+			}
+			else
 			{
 				jobNumber--;
 				extra--;
 			}
 		}
+		
 		jobNumber++;
 	}
 
@@ -313,16 +318,19 @@ void distributeJobs(sem_t * sem, int sons, int  pipearr[][2], char * s, int argc
 }
 
 
-void detachSharedMemory(char * shm){
+void detachSharedMemory(char * shm)
+{
 
-	if (shmdt(shm) != 0){
+	if (shmdt(shm) != 0)
+	{
         perror("shmdt");
         exit(1);
     }
 }
 
 
-void intToChar(int num, char result[]){
+void intToChar(int num, char result[])
+{
   	sprintf(result, "%d", num);
   	
 }
@@ -341,7 +349,8 @@ sem_t * createSemaphore(int key)
 
 	 sem = sem_open (pidChar, O_CREAT | O_EXCL, 0644, 1); 
  
-	if(sem==SEM_FAILED){
+	if(sem==SEM_FAILED)
+	{
 		printf("error creating semaphore\n");
 		exit(1);
 	}
