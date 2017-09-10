@@ -19,6 +19,7 @@
 #define TRUE 1
 #define FALSE 0
 #define MAXPIDDIGITS 11
+#define WRONG_ARCHIVE_BOUND 33
 
 void startListening(int fdread, int fdwrite, int son);
 char * createSharedMemory(key_t key);
@@ -30,9 +31,16 @@ void ditributeJobs(sem_t * sem, int sons, int  pipearr[][2], char * s, int argc,
 void detachSharedMemory(char * shm);
 void intToChar(int num, char result[]);
 sem_t * createSemaphore(int key);
+void errorFile(char aux[], char buff[]);
+void saveResultsToFile(char * results);
 
 
+void errorFile(char aux[], char buff[])
+{
 
+	sprintf(aux, "archivo inválido : %s \n" , buff);
+
+}
 void startListening(int fdread, int fdwrite, int son)
 {
 	char buff[BUFF_MAX];
@@ -51,11 +59,17 @@ void startListening(int fdread, int fdwrite, int son)
 		if(buff[0]!=0)
 		{
 			command[7] = 0;
-			sprintf(num, "%d", son);	
+			sprintf(num, "%d", son);
+			int flag = (son==1);	
 			printf("I am your son number %d and I received the file: %s\n", son, buff);
 			strcat(command, buff);
-			FILE * file = popen(command, "r");	
+			FILE * file = popen(command, "r");
 			fgets(aux, AUX_MAX, file);	
+
+			if(strlen(aux) <= WRONG_ARCHIVE_BOUND)
+			{
+				errorFile(aux, buff);
+			}
 			strcat(num, aux);
 			write(fdwrite, num, strlen(num) + 1);
 		}else{
