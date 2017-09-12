@@ -20,6 +20,8 @@
 #define FALSE 0
 #define MAXPIDDIGITS 11
 #define WRONG_ARCHIVE_BOUND 33
+#define PROCESSING 1
+#define END_PROCESSING 2
 
 void startListening(int fdread, int fdwrite, int son);
 char * createSharedMemory(key_t key);
@@ -37,7 +39,7 @@ void saveResultsToFile(char * results);
 
 void errorFile(char aux[], char buff[])
 {
-	sprintf(aux, "archivo inválido : %s \n" , buff);
+	sprintf(aux, "Invalid archive : %s \n" , buff);
 }
 
 void startListening(int fdread, int fdwrite, int son)
@@ -47,19 +49,18 @@ void startListening(int fdread, int fdwrite, int son)
 	char command[COMMAND_MAX];
 	int readbytes;
 	char aux[AUX_MAX];
-	char flag=TRUE;
+	char notCero=TRUE;
 
 	strcpy(command, "md5sum");
 	command[6] = ' ';
 	command[7] = 0;
 
-	while(flag && (readbytes = read(fdread,buff,BUFF_MAX)) > 0)
+	while(notCero && (readbytes = read(fdread,buff,BUFF_MAX)) > 0)
 	{	
 		if(buff[0]!=0)
 		{
 			command[7] = 0;
-			sprintf(num, "%d", son);
-			int flag = (son==1);	
+			sprintf(num, "%d", son);	
 			printf("I am your son number %d and I received the file: %s\n", son, buff);
 			strcat(command, buff);
 			FILE * file = popen(command, "r");
@@ -74,7 +75,7 @@ void startListening(int fdread, int fdwrite, int son)
 		}
 		else
 		{
-			flag=FALSE;
+			notCero=FALSE;
 		}					
 	}
 
@@ -276,12 +277,11 @@ void distributeJobs(sem_t * sem, int sons, int  pipearr[][2], char * s, int argc
 
 		child_number=buff[0]-'0';
 
-		printf("lei de hijo %d , %d digitos\n", child_number, size);
-
 		if(workDoneByEach[child_number] < minForEach)
 		{
 			allocatingNewFile(pipearr[child_number], argv[jobNumber], strlen(argv[jobNumber]) + 1,child_number);
 			workDoneByEach[child_number]++;
+			jobNumber++;
 
 		}
 		else
@@ -291,21 +291,20 @@ void distributeJobs(sem_t * sem, int sons, int  pipearr[][2], char * s, int argc
 				allocatingNewFile(pipearr[child_number], argv[jobNumber], strlen(argv[jobNumber]) + 1, child_number);
 				workDoneByEach[child_number]++;
 				overload--;
+				jobNumber++;
 			}
 			else
 			{
-				jobNumber--;
 				extra--;
 			}
 		}
 		
-		jobNumber++;
+		
 	}
 
 	while(extra>=1)
 	{	
 		receive(pipearr, &size, buff);
-		printf("Lei %d datos\n",size );
 
 		sem_wait(sem);
 
@@ -345,9 +344,7 @@ sem_t * createSemaphore(int key)
 
 	pidChar[0]='/';
 
-	printf("la clave del semaforo padre es %s\n", pidChar);
-
-	 sem = sem_open (pidChar, O_CREAT | O_EXCL, 0644, 1); 
+	sem = sem_open (pidChar, O_CREAT | O_EXCL, 0644, 1); 
  
 	if(sem==SEM_FAILED)
 	{
@@ -405,15 +402,18 @@ int main(int argc, char * argv[])
 
 	sem = createSemaphore(pid);
 
-	printf("%d\n", getpid());
+	shm[0] = PROCESSING;
 
-	shm[0] = 1;
+	printf("Prepare to start, here is your pid\n");
+	printf("%d\n", getpid());
+	sleep(5);
+	printf("Starting *********\n");
 
 	s = shm + 1;
 
 	distributeJobs(sem,SONS, pipearr, s, argc, argv);
 
-	shm[0] = 0;
+	shm[0] = END_PROCESSING;
 
     terminateSons(pipearr);
 

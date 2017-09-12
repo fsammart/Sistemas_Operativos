@@ -11,6 +11,63 @@
  #include <string.h>
 
 #define MAXPIDDIGITS 11
+#define PROCESSING 1
+#define END_PROCESSING 2
+#define TRUE 1
+#define FALSE 0
+
+
+char * openSharedMemory(key_t key)
+{
+    int shmid;
+    char * shm;
+
+    if((shmid = shmget(key, 4000, 0666)) < 0)
+    {
+        perror("shmget");
+        exit(1);
+    }
+
+    if ((shm = shmat(shmid, NULL, 0)) == (char *) - 1)
+    {
+        perror("shmat");
+        exit(1);
+    }
+
+    return shm;
+
+}
+
+sem_t * openSemaphore(char * s)
+{
+    sem_t * sem;
+    char * semKey= malloc(MAXPIDDIGITS * sizeof(char));
+
+    semKey[0]= '/';
+    semKey[1]=0;
+
+    strcat(semKey,s);
+
+
+    sem = sem_open (semKey, O_CREAT, 0644, 1); 
+
+    if(sem==SEM_FAILED){
+        printf("error\n");
+    }
+    
+    sem_unlink (semKey); 
+
+    return sem;
+}
+
+void print( char * current)
+{
+    while(*current!=0)
+        {             
+            putchar(*current);
+            current++;
+        }
+}
 
 int main(int argc, char* argv[])
 {
@@ -21,6 +78,7 @@ int main(int argc, char* argv[])
     int pid;
     sem_t * sem;
     char semKey[MAXPIDDIGITS];
+    int appProcessEnded= TRUE;
     
     if(argc<=1)
     {
@@ -29,43 +87,32 @@ int main(int argc, char* argv[])
     }else{
         key=atoi(argv[1]);
     }
- 
-    if ((shmid = shmget(key, 4000, 0666)) < 0) {
-        perror("shmget");
-        exit(1);
-    }
 
-    if ((shm = shmat(shmid, NULL, 0)) == (char *) -1) {
-        perror("shmat");
-        exit(1);
-    }
 
-    semKey[0]= '/';
-    semKey[1]=0;
+    shm=openSharedMemory(key);
 
-    strcat(semKey,argv[1]);
-
-    printf("la clave del semaforo es%s\n",semKey );
-
-    sem = sem_open (semKey, O_CREAT, 0644, 1); 
-
-    if(sem==SEM_FAILED){
-        printf("error\n");
-    }
-    
-    sem_unlink (semKey); 
+    sem = openSemaphore(argv[1]);
 
     current=shm + 1;
-    while(shm[0]!=0 || *current!=0){
 
-        //if mutex unlocked and *current != 0 then lock mutex and finish printing then unlock mutex
+    while(shm[0]==PROCESSING)
+      {  
+
+        appProcessEnded=FALSE;
+
         sem_wait(sem);
-        if(*current!= 0 )
-        {   
-            putchar(*current);
-            current++;
-        }
+
+        print(current);
+
+        shm[1]=0;
+        current=shm +1;
+        
         sem_post(sem);
+    }
+
+    if(appProcessEnded)
+    {
+        print(current);
     }
 
     if (shmctl(shmid, IPC_RMID, NULL) < 0){
